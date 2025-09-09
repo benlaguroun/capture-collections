@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 export const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,19 +18,13 @@ export const Header = () => {
   }, []);
 
   const navItems = [
-    { label: "Home", href: "#home" },
-    { label: "Portfolio", href: "#portfolio" },
-    { label: "Services", href: "#services" },
-    { label: "About", href: "#about" },
-    { label: "Contact", href: "#contact" },
+    { label: "Home", href: "/" },
+    { label: "About", href: "/about" },
+    { label: "Portfolio", href: "/portfolio" },
+    { label: "Services", href: "/services" },
+    { label: "Contact", href: "/contact" },
+    { label: "Shop", href: "/shop" },
   ];
-
-  const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
 
   return (
     <header
@@ -39,31 +35,34 @@ export const Header = () => {
       <nav className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <div className="font-display text-2xl font-bold text-foreground">
+          <Link
+            to="/"
+            className="font-display text-2xl font-bold text-foreground hover:text-primary transition-colors"
+          >
             Elena Rodriguez
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
-              <button
+              <Link
                 key={item.label}
-                onClick={() => scrollToSection(item.href)}
-                className="text-foreground hover:text-primary transition-colors duration-300 font-medium"
+                to={item.href}
+                className={`text-foreground hover:text-primary transition-colors duration-300 font-medium ${
+                  location.pathname === item.href
+                    ? "text-primary font-semibold"
+                    : ""
+                }`}
               >
                 {item.label}
-              </button>
+              </Link>
             ))}
           </div>
 
           {/* CTA Button */}
           <div className="hidden md:block">
-            <Button
-              variant="hero"
-              size="lg"
-              onClick={() => scrollToSection("#contact")}
-            >
-              Book a Session
+            <Button variant="hero" size="lg" asChild>
+              <Link to="/contact">Book a Session</Link>
             </Button>
           </div>
 
@@ -83,27 +82,23 @@ export const Header = () => {
           <div className="md:hidden mt-4 pt-4 border-t border-border/20">
             <div className="flex flex-col space-y-4">
               {navItems.map((item) => (
-                <button
+                <Link
                   key={item.label}
-                  onClick={() => {
-                    scrollToSection(item.href);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="text-left text-foreground hover:text-primary transition-colors duration-300 font-medium py-2"
+                  to={item.href}
+                  className={`text-left text-foreground hover:text-primary transition-colors duration-300 font-medium py-2 ${
+                    location.pathname === item.href
+                      ? "text-primary font-semibold"
+                      : ""
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.label}
-                </button>
+                </Link>
               ))}
-              <Button
-                variant="hero"
-                size="lg"
-                className="mt-4"
-                onClick={() => {
-                  scrollToSection("#contact");
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                Book a Session
+              <Button variant="hero" size="lg" className="mt-4" asChild>
+                <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)}>
+                  Book a Session
+                </Link>
               </Button>
             </div>
           </div>
