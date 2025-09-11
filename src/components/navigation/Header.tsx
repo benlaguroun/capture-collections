@@ -1,12 +1,24 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ShoppingCart, User, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 export const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
+  const { cartCount } = useCart();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -59,11 +71,61 @@ export const Header = () => {
             ))}
           </div>
 
-          {/* CTA Button */}
-          <div className="hidden md:block">
-            <Button variant="hero" size="lg" asChild>
-              <Link to="/contact">Book a Session</Link>
-            </Button>
+          {/* Cart and Auth */}
+          <div className="hidden md:flex items-center space-x-4">
+            {/* Cart Button */}
+            <Link to="/cart" className="relative">
+              <Button variant="ghost-elegant" size="icon">
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  >
+                    {cartCount}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
+
+            {/* Auth Section */}
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost-elegant"
+                    className="flex items-center space-x-2"
+                  >
+                    <User className="h-4 w-4" />
+                    <span className="hidden lg:inline">
+                      {user.user_metadata?.display_name ||
+                        user.email?.split("@")[0] ||
+                        "Account"}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link to="/cart" className="flex items-center">
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Cart ({cartCount})
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={signOut}
+                    className="text-destructive"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="hero" size="lg" asChild>
+                <Link to="/auth">Login</Link>
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -95,11 +157,49 @@ export const Header = () => {
                   {item.label}
                 </Link>
               ))}
-              <Button variant="hero" size="lg" className="mt-4" asChild>
-                <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)}>
-                  Book a Session
+              {/* Mobile Auth and Cart */}
+              <div className="mt-4 pt-4 border-t border-border/20 space-y-3">
+                <Link
+                  to="/cart"
+                  className="flex items-center justify-between text-foreground hover:text-primary transition-colors duration-300 font-medium py-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span className="flex items-center">
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Cart
+                  </span>
+                  {cartCount > 0 && (
+                    <Badge variant="secondary">{cartCount}</Badge>
+                  )}
                 </Link>
-              </Button>
+
+                {user ? (
+                  <div className="space-y-2">
+                    <div className="text-sm text-muted-foreground py-2">
+                      Welcome,{" "}
+                      {user.user_metadata?.display_name ||
+                        user.email?.split("@")[0]}
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        signOut();
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="hero" size="lg" className="w-full" asChild>
+                    <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>
+                      Login
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}
