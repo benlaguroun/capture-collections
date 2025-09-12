@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,20 +7,13 @@ import { Header } from "@/components/navigation/Header";
 import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCheckout } from "@/hooks/useCheckout";
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, cartTotal, loading } =
     useCart();
   const { user } = useAuth();
-  const [processingCheckout, setProcessingCheckout] = useState(false);
-
-  const handleCheckout = async () => {
-    if (!user) return;
-
-    setProcessingCheckout(true);
-    // Checkout logic will be implemented with Stripe/PayPal
-    setTimeout(() => setProcessingCheckout(false), 2000);
-  };
+  const { processing, createOrder } = useCheckout();
 
   if (!user) {
     return (
@@ -171,12 +163,10 @@ const Cart = () => {
                       className="w-full"
                       variant="hero"
                       size="lg"
-                      onClick={handleCheckout}
-                      disabled={processingCheckout}
+                      onClick={createOrder}
+                      disabled={processing}
                     >
-                      {processingCheckout
-                        ? "Processing..."
-                        : "Proceed to Checkout"}
+                      {processing ? "Processing..." : "Proceed to Checkout"}
                     </Button>
                     <Link to="/shop" className="block mt-4">
                       <Button variant="outline" className="w-full">

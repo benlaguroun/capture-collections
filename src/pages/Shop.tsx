@@ -1,81 +1,62 @@
+import { useState, useEffect } from "react";
 import { Header } from "@/components/navigation/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Star, Download, Package } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
+import { useCart } from "@/contexts/CartContext";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string;
+  category: string;
+  is_digital: boolean;
+}
 
 const Shop = () => {
-  const products = [
-    {
-      id: 1,
-      title: "Premium Print Collection",
-      description: "High-quality prints on museum-grade paper",
-      price: "$45",
-      originalPrice: "$60",
-      image: "/api/placeholder/400/400",
-      category: "Prints",
-      rating: 5,
-      reviews: 24,
-      badge: "Best Seller",
-    },
-    {
-      id: 2,
-      title: "Wedding Album - Luxury Edition",
-      description: "Handcrafted leather-bound wedding album",
-      price: "$299",
-      image: "/api/placeholder/400/400",
-      category: "Albums",
-      rating: 5,
-      reviews: 18,
-      badge: "New",
-    },
-    {
-      id: 3,
-      title: "Digital Gallery - Full Resolution",
-      description: "Complete digital gallery with download rights",
-      price: "$150",
-      image: "/api/placeholder/400/400",
-      category: "Digital",
-      rating: 5,
-      reviews: 42,
-      isDigital: true,
-    },
-    {
-      id: 4,
-      title: "Canvas Print Set (3-piece)",
-      description: "Gallery-wrapped canvas prints ready to hang",
-      price: "$180",
-      originalPrice: "$220",
-      image: "/api/placeholder/400/400",
-      category: "Canvas",
-      rating: 5,
-      reviews: 15,
-    },
-    {
-      id: 5,
-      title: "Portrait Session Prints",
-      description: "Professional portrait prints in various sizes",
-      price: "$35",
-      image: "/api/placeholder/400/400",
-      category: "Prints",
-      rating: 5,
-      reviews: 31,
-    },
-    {
-      id: 6,
-      title: "Custom Photo Book",
-      description: "Personalized photo book with your favorite memories",
-      price: "$120",
-      image: "/api/placeholder/400/400",
-      category: "Books",
-      rating: 5,
-      reviews: 22,
-      badge: "Popular",
-    },
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const { addToCart } = useCart();
 
   const categories = ["All", "Prints", "Albums", "Digital", "Canvas", "Books"];
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredProducts =
+    selectedCategory === "All"
+      ? products
+      : products.filter(
+          (product) =>
+            product.category?.toLowerCase() === selectedCategory.toLowerCase()
+        );
+
+  const handleAddToCart = async (productId: string) => {
+    await addToCart(productId, 1);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -104,9 +85,12 @@ const Shop = () => {
             {categories.map((category, i) => (
               <Button
                 key={category}
-                variant="ghost-elegant"
+                variant={
+                  selectedCategory === category ? "default" : "ghost-elegant"
+                }
                 className="animate-fade-in-up"
                 style={{ animationDelay: `${i * 0.1}s` }}
+                onClick={() => setSelectedCategory(category)}
               >
                 {category}
               </Button>
@@ -118,79 +102,80 @@ const Shop = () => {
       {/* Products Grid */}
       <section className="pb-16 px-6">
         <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((product, i) => (
-              <Card
-                key={product.id}
-                className="group overflow-hidden hover-scale animate-fade-in-up"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                <div className="relative">
-                  <img
-                    src={product.image}
-                    alt={product.title}
-                    className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  {product.badge && (
-                    <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
-                      {product.badge}
-                    </Badge>
-                  )}
-                  {product.isDigital && (
-                    <div className="absolute top-3 right-3 p-2 bg-black/20 rounded-full">
-                      <Download className="w-4 h-4 text-white" />
-                    </div>
-                  )}
-                </div>
-
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge variant="outline" className="text-xs">
-                      {product.category}
-                    </Badge>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-primary text-primary" />
-                      <span className="text-sm text-muted-foreground">
-                        {product.rating} ({product.reviews})
-                      </span>
-                    </div>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Loading products...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProducts.map((product, i) => (
+                <Card
+                  key={product.id}
+                  className="group overflow-hidden hover-scale animate-fade-in-up"
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  <div className="relative">
+                    <img
+                      src={product.image_url || "/api/placeholder/400/400"}
+                      alt={product.name}
+                      className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    {product.is_digital && (
+                      <div className="absolute top-3 right-3 p-2 bg-black/20 rounded-full">
+                        <Download className="w-4 h-4 text-white" />
+                      </div>
+                    )}
                   </div>
 
-                  <CardTitle className="font-display text-xl font-light leading-tight">
-                    {product.title}
-                  </CardTitle>
-                  <p className="text-muted-foreground text-sm">
-                    {product.description}
-                  </p>
-                </CardHeader>
-
-                <CardContent className="pt-0">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-display text-2xl font-bold text-primary">
-                        {product.price}
-                      </span>
-                      {product.originalPrice && (
-                        <span className="text-sm text-muted-foreground line-through">
-                          {product.originalPrice}
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge variant="outline" className="text-xs">
+                        {product.category}
+                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-primary text-primary" />
+                        <span className="text-sm text-muted-foreground">
+                          5.0 (24)
                         </span>
-                      )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex gap-2">
-                    <Button variant="default" className="flex-1">
-                      <ShoppingCart className="w-4 h-4 mr-2" />
-                      Add to Cart
-                    </Button>
-                    <Button variant="ghost-elegant" size="icon">
-                      <Package className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <CardTitle className="font-display text-xl font-light leading-tight">
+                      {product.name}
+                    </CardTitle>
+                    <p className="text-muted-foreground text-sm">
+                      {product.description}
+                    </p>
+                  </CardHeader>
+
+                  <CardContent className="pt-0">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-display text-2xl font-bold text-primary">
+                          ${(product.price / 100).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="default"
+                        className="flex-1"
+                        onClick={() => handleAddToCart(product.id)}
+                      >
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Add to Cart
+                      </Button>
+                      <Button variant="ghost-elegant" size="icon">
+                        <Package className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
